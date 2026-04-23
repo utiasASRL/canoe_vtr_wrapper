@@ -3,15 +3,15 @@
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 export ROOTDIR=$(dirname "$SCRIPT_DIR")
 
-container_state=$(docker inspect -f '{{.State.Running}}' boreas_wrapper_$(whoami) 2>/dev/null)
+container_state=$(docker inspect -f '{{.State.Running}}' canoe_wrapper_$(whoami) 2>/dev/null)
 
 if [ "$container_state" = "true" ]
 then
 	echo 'Container already running, joining it now.'
-	docker exec -it boreas_wrapper_$(whoami) /entrypoint.sh
+	docker exec -it canoe_wrapper_$(whoami) /entrypoint.sh
 else
 	echo 'New container run initialized.'
-	docker run -it --rm --name boreas_wrapper_$(whoami) \
+	docker run -it --rm --name canoe_wrapper_$(whoami) \
 	--privileged \
 	--network=host \
 	--ipc=host \
@@ -20,6 +20,6 @@ else
 	-v /tmp/.X11-unix:/tmp/.X11-unix \
 	-v ${HOME}/.Xauthority:${HOME}/.Xauthority:rw \
 	-v $ROOTDIR:$ROOTDIR:rw \
-	-w $ROOTDIR boreas_wrapper_$(whoami)
+	-w $ROOTDIR canoe_wrapper_$(whoami)
 fi
 cd $ROOTDIR
