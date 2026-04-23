@@ -1,14 +1,9 @@
 [submodule "vtr3"]
     path = external/vtr3
-    url = ../vtr3.git
-    branch = aeva
+    url = https://github.com/utiasASRL/vtr3.git
 [submodule "pyboreas"]
     path = external/pyboreas
-    url = ../pyboreas.git
-    branch = aeva
+    url = https://github.com/utiasASRL/pyboreas.git
 [submodule "vtr3_pose_graph"]
     path = external/vtr3_pose_graph
-    url = ../vtr3_pose_graph.git
-[submodule "vtr3_python"]
-    path = external/vtr3_python
-    url = ../vtr3_python.git
+    url = https://github.com/utiasASRL/vtr3_pose_graph.git
