@@ -1,13 +1,13 @@
 ## This script assumes the following environment variables are set:
 ##   ROOTDIR VTRRROOT VTRRDATA VTRRESULT
 ## These are all set automatically using the setup_container.sh script!
-## example usage: bash run_test.sh localization radar boreas-2020-11-26-13-58 boreas-2020-12-04-14-00
+## example usage: bash run_test.sh localization radar canoe-2025-08-20-16-07 canoe-2025-08-21-11-31
 
 # Get arguments
 MODE=$1         # [odometry, localization]
 SENSOR=$2       # [radar, lidar, radar_lidar]
-ODO_INPUT=$3    # Boreas sequence
-LOC_INPUT=$4    # Boreas sequence, not used if mode=odometry
+ODO_INPUT=$3    # CANOE sequence
+LOC_INPUT=$4    # CANOE sequence, not used if mode=odometry
 
 # Check validity of inputs
 if [ "$MODE" != "odometry" ] && [ "$MODE" != "localization" ]; then
@@ -19,11 +19,11 @@ if [ "$SENSOR" != "radar" ] && [ "$SENSOR" != "lidar" ] && [ "$SENSOR" != "radar
     exit 1
 fi
 if [ -z "$ODO_INPUT" ]; then
-    echo "Error: ODO_INPUT (boreas sequence) must be provided"
+    echo "Error: ODO_INPUT (canoe sequence) must be provided"
     exit 1
 fi
 if [ "$MODE" = "localization" ] && [ -z "$LOC_INPUT" ]; then
-    echo "Error: LOC_INPUT (boreas sequence) must be provided if mode is 'localization'"
+    echo "Error: LOC_INPUT (canoe sequence) must be provided if mode is 'localization'"
     exit 1
 fi
 
@@ -40,7 +40,7 @@ SAVE_CONFIG=${SENSOR}_${MODE}_config.yaml
 mkdir -p ${VTRRRESULT}/${ODO_INPUT}
 cp ${PARAM_FILE} ${VTRRRESULT}/${ODO_INPUT}/${SAVE_CONFIG}
 
-# Call corresponding script from boreas_vtr_wrapper
+# Call corresponding script from canoe_vtr_wrapper
 if [ "$1" = "odometry" ]; then
     bash ${VTRRROOT}/src/vtr_testing_${SENSOR}/script/test_odometry.sh ${ODO_INPUT} ${PARAM_FILE}
 else
