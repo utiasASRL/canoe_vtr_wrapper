@@ -4,4 +4,4 @@ scikit-learn
 catkin_pkg
 empy
 lark
--e ./external/pyboreas
+-e ./external/pycanoe
