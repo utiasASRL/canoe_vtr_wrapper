@@ -1,5 +1,4 @@
 # Set ROOTDIR to the root directory of the project
-# KTODO: ADD GPU BACK TO DOCKER
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 export ROOTDIR=$(dirname "$SCRIPT_DIR")
 

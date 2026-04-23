@@ -43,6 +43,7 @@ Within the running container
 
 ```Bash
 bash scripts/create_venv.sh
+source scripts/setup_container.sh
 ```
 
 # Running Experiments

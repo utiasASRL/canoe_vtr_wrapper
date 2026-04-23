@@ -1,4 +1,4 @@
-# Assumes that ROOTDIR is set and pointing to mm_masking root directory
+# Assumes that ROOTDIR is set and pointing to root directory
 cd $ROOTDIR
 virtualenv venv
 touch venv/COLCON_IGNORE
