@@ -1,7 +1,7 @@
 ## Download canoe_vtr_wrapper
-NOTE: this repo uses `boreas_vtr_wrapper` as a template. The code in this repository has been modified for using the CANOE dataset.
+NOTE: this repo uses `boreas_vtr_wrapper` as a template. The code has been modified for using the CANOE dataset.
 
-This package contains testing code for lidar and radar pipeline. Download it do your local filesystem.
+This package contains testing code for lidar and radar pipeline. Clone it using:
 
 ```Bash
 git clone git@github.com:utiasASRL/canoe_vtr_wrapper.git
