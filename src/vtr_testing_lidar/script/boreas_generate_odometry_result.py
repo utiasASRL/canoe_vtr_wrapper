@@ -73,24 +73,6 @@ def main(dataset_dir, result_dir, velocity):
     return
   print("Looking at result data directory:", data_dir)
   
-  T_applanix_wheel_file = os.path.join(dataset_dir, odo_input_seq, "calib/T_applanix_wheel.txt")
-  if not os.path.exists(T_applanix_wheel_file):
-    print("File does not exist:", T_applanix_wheel_file, ". Loading default.")
-    T_applanix_wheel = np.array([[0.999560,  0.029665, 0.000000, -0.813993],
-                                [-0.029665, 0.999560, 0.000000, -0.455312],
-                                [0.000000, 0.000000, 1.000000, -1.610000],
-                                [0.000000, 0.000000, 0.000000, 1.000000]])
-  else:
-    T_applanix_wheel = np.loadtxt(T_applanix_wheel_file)
-  T_wheel_applanix = get_inverse_tf(T_applanix_wheel)
-
-  T_wheelfwd_wheel = np.array([[0, 1, 0, 0],
-                              [-1, 0, 0, 0],
-                              [0, 0, 1, 0],
-                              [0, 0, 0, 1]])
-
-  T_robot_applanix = T_wheelfwd_wheel @ T_wheel_applanix
-  
   # get bag file
   bag_file = '{0}/{1}/{1}_0.db3'.format(osp.abspath(data_dir), "odometry_result")
   parser = BagFileParser(bag_file)
@@ -101,9 +83,8 @@ def main(dataset_dir, result_dir, velocity):
     timestamp = int(int(message[1].timestamp) / 1000)
     T_w_r_vec = np.array(message[1].t_world_robot.xi)[..., None]
     T_w_r = se3op.vec2tran(T_w_r_vec)
-    T_w_a = T_w_r @ T_robot_applanix
-    T_a_w_res = get_inverse_tf(T_w_a).flatten().tolist()[:12]
-    result.append([timestamp] + T_a_w_res)
+    T_r_w_res = get_inverse_tf(T_w_r).flatten().tolist()[:12]
+    result.append([timestamp] + T_r_w_res)
 
   output_dir = osp.join(result_dir, "odometry_result")
   os.makedirs(output_dir, exist_ok=True)
@@ -134,11 +115,10 @@ def main(dataset_dir, result_dir, velocity):
       w_v_r_robot[4] = message[1].angular.y
       w_v_r_robot[5] = message[1].angular.z
 
-      # Transform velocity from robot to applanix frame/origin (lidar results are in applanix frame)
-      w_a_v_applanix = - se3op.tranAd(get_inverse_tf(T_robot_applanix)) @ w_v_r_robot.reshape(6, 1)
+      w_r_v_applanix = - w_v_r_robot.reshape(6, 1)
 
       timestamp = int(int(message[0]) / 1000)
-      vel_results.append([timestamp] + w_a_v_applanix.flatten().tolist())
+      vel_results.append([timestamp] + w_r_v_applanix.flatten().tolist())
 
     output_dir = osp.join(result_dir, "odometry_vel_result")
     os.makedirs(output_dir, exist_ok=True)
