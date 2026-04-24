@@ -54,33 +54,33 @@ int main(int argc, char **argv) {
   }
   configureLogging(log_filename, log_debug, log_enabled);
 
-  CLOG(WARNING, "boreas_wrapper") << "Odometry Directory: " << odo_dir.string();
-  CLOG(WARNING, "boreas_wrapper") << "Output Directory: " << data_dir.string();
+  CLOG(WARNING, "canoe_wrapper") << "Odometry Directory: " << odo_dir.string();
+  CLOG(WARNING, "canoe_wrapper") << "Output Directory: " << data_dir.string();
 
   std::vector<std::string> parts;
   boost::split(parts, odo_dir_str, boost::is_any_of("/"));
   auto stem = parts.back();
   boost::replace_all(stem, "-", "_");
-  CLOG(WARNING, "boreas_wrapper") << "Publishing status to topic: "
+  CLOG(WARNING, "canoe_wrapper") << "Publishing status to topic: "
                                   << ("b" + stem + "_lidar_odometry");
   const auto status_publisher = node->create_publisher<std_msgs::msg::String>(
       "b" + stem + "_lidar_odometry", 1);
 
   // Load IMU data
   const auto use_imu = node->declare_parameter<bool>("boreas.imu.use_imu", false);
-  CLOG(WARNING, "boreas_wrapper") << "IMU enabled: " << use_imu;
+  CLOG(WARNING, "canoe_wrapper") << "IMU enabled: " << use_imu;
   std::vector<IMUMeasurement> all_imu_meas;
   EdgeTransform T_robot_imu; 
   if (use_imu) {
     const auto imu_path = odo_dir / "imu" / "imu.csv";
     if (!fs::exists(imu_path)) {
-      CLOG(ERROR, "boreas_wrapper") << "IMU file does not exist: " << imu_path.string();
+      CLOG(ERROR, "canoe_wrapper") << "IMU file does not exist: " << imu_path.string();
       return 1;
     }
     load_all_imu_meas(imu_path, all_imu_meas);
     T_robot_imu = load_T_robot_imu(odo_dir);
-    CLOG(WARNING, "boreas_wrapper") << "Loaded " << all_imu_meas.size() << " IMU measurements";
-    CLOG(WARNING, "boreas_wrapper") << "Transform T_robot_imu has been set to:\n" << T_robot_imu;
+    CLOG(WARNING, "canoe_wrapper") << "Loaded " << all_imu_meas.size() << " IMU measurements";
+    CLOG(WARNING, "canoe_wrapper") << "Transform T_robot_imu has been set to:\n" << T_robot_imu;
   }
 
   // Pose graph
@@ -109,7 +109,7 @@ int main(int argc, char **argv) {
 
   const auto T_robot_lidar = load_T_robot_lidar(odo_dir);
   const auto T_lidar_robot = T_robot_lidar.inverse();
-  CLOG(WARNING, "boreas_wrapper") << "Transform from " << robot_frame << " to "
+  CLOG(WARNING, "canoe_wrapper") << "Transform from " << robot_frame << " to "
                                   << lidar_frame << " has been set to" << T_lidar_robot;
 
   auto tf_sbc = std::make_shared<tf2_ros::StaticTransformBroadcaster>(node);
@@ -127,13 +127,13 @@ int main(int argc, char **argv) {
   for (const auto &dir_entry : fs::directory_iterator{odo_dir / "lidar"})
     if (dir_entry.path().extension() == ".bin") files.push_back(dir_entry);
   std::sort(files.begin(), files.end());
-  CLOG(WARNING, "boreas_wrapper") << "Found " << files.size() << " lidar data";
+  CLOG(WARNING, "canoe_wrapper") << "Found " << files.size() << " lidar data";
   const auto start_frame = node->declare_parameter<int>("boreas.odometry.start_frame", 0);
   const auto end_frame = node->declare_parameter<int>("boreas.odometry.end_frame", -1);
 
   // Load in groundtruth data
   const auto load_gt = node->declare_parameter<bool>("boreas.load_gt", true);
-  CLOG(WARNING, "boreas_wrapper") << "Load groundtruth: " << load_gt;
+  CLOG(WARNING, "canoe_wrapper") << "Load groundtruth: " << load_gt;
   std::vector<lgmath::se3::Transformation> T_lid_world_gt;
   std::vector<Eigen::Vector<double, 6>> v_lid_gt;
   // Reserve space
@@ -141,7 +141,7 @@ int main(int argc, char **argv) {
   v_lid_gt.reserve(files.size());
   if (load_gt) {
     load_lidar_groundtruth(odo_dir, T_lid_world_gt, v_lid_gt);
-    CLOG(WARNING, "boreas_wrapper") << "Loaded groundtruth for " << T_lid_world_gt.size() << " frames";
+    CLOG(WARNING, "canoe_wrapper") << "Loaded groundtruth for " << T_lid_world_gt.size() << " frames";
   }
 
   // thread handling variables
@@ -169,7 +169,7 @@ int main(int argc, char **argv) {
 
     ///
     const auto [timestamp, points] = load_lidar(it->path().string());
-    CLOG(WARNING, "boreas_wrapper") << "\033[95mLoading lidar frame " << frame
+    CLOG(WARNING, "canoe_wrapper") << "\033[95mLoading lidar frame " << frame
                                     << " with timestamp " << timestamp << "\033[0m";
 
     // publish clock for sim time
@@ -202,7 +202,7 @@ int main(int argc, char **argv) {
         gyro_msgs.push_back(gyro_msg);
         ++imu_counter;
       }
-      CLOG(DEBUG, "boreas_wrapper") << "Loaded " << gyro_msgs.size() << " IMU measurements";
+      CLOG(DEBUG, "canoe_wrapper") << "Loaded " << gyro_msgs.size() << " IMU measurements";
     }
 
     // Convert message to query_data format and store into query_data
@@ -256,8 +256,8 @@ int main(int argc, char **argv) {
   callback.reset();
   pipeline.reset();
   pipeline_factory.reset();
-  CLOG(WARNING, "boreas_wrapper") << "Saving pose graph and reset.";
+  CLOG(WARNING, "canoe_wrapper") << "Saving pose graph and reset.";
   graph->save();
   graph.reset();
-  CLOG(WARNING, "boreas_wrapper") << "Saving pose graph and reset. - DONE!";
+  CLOG(WARNING, "canoe_wrapper") << "Saving pose graph and reset. - DONE!";
 }
