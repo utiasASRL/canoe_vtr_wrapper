@@ -10,7 +10,7 @@ from rosidl_runtime_py.utilities import get_message
 from rclpy.serialization import deserialize_message
 
 from pylgmath import se3op
-from pyboreas import BoreasDataset
+from pycanoe import CanoeDataset
 
 np.set_printoptions(suppress=True)
 
@@ -60,7 +60,7 @@ def main(dataset_dir, result_dir, velocity):
   print("Dataset Directory:", dataset_dir)
 
   try:
-    dataset_odo = BoreasDataset(osp.normpath(dataset_dir), [[odo_input_seq]])
+    dataset_odo = CanoeDataset(osp.normpath(dataset_dir), [[odo_input_seq]])
   except:
     print("Data set does not exist:", dataset_dir, odo_input_seq)
     return
@@ -142,7 +142,7 @@ if __name__ == "__main__":
   # Assuming following path structure:
   # <rosbag name>/metadata.yaml
   # <rosbag name>/<rosbag name>_0.db3
-  parser.add_argument('--dataset', default=os.getcwd(), type=str, help='path to boreas dataset (contains boreas-*)')
+  parser.add_argument('--dataset', default=os.getcwd(), type=str, help='path to canoe dataset (contains canoe-*)')
   parser.add_argument('--path', default=os.getcwd(), type=str, help='path to vtr folder (default: os.getcwd())')
   parser.add_argument('--velocity', default=False, action='store_true', help='evaluate velocity (default: False)')
 

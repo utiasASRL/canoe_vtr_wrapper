@@ -5,6 +5,5 @@ touch venv/COLCON_IGNORE
 source venv/bin/activate
 
 pip install -r $ROOTDIR/requirements.txt
-deactivate
 
 cd $ROOTDIR

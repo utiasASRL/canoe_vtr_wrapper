@@ -1,6 +1,6 @@
 ## this script assumes the following environment variables are set:
 ##   VTRRROOT VTRRDATA VTRRRESULT
-## example usage: test_localization.sh boreas-2021-09-02-11-42 boreas-2021-09-07-09-35
+## example usage: test_localization.sh canoe-2025-08-20-16-07 canoe-2025-08-21-11-31
 
 # Get arguments
 ODO_INPUT=$1
@@ -8,7 +8,7 @@ LOC_INPUT=$2
 if [ $# -eq 3 ]; then
   PARAM_FILE=$3
 else
-  PARAM_FILE=${VTRRROOT}/src/vtr_testing_radar/config/boreas.yaml
+  PARAM_FILE=${VTRRROOT}/runtime/config/radar_config.yaml
 fi
 
 # Log
@@ -35,7 +35,7 @@ mkdir -p ${VTRRRESULT}/${ODO_INPUT}/${LOC_INPUT}
 cp -r ${VTRRRESULT}/${ODO_INPUT}/${ODO_INPUT}/* ${VTRRRESULT}/${ODO_INPUT}/${LOC_INPUT}
 # Copy over parameter file
 cp ${PARAM_FILE} ${VTRRRESULT}/${ODO_INPUT}/${LOC_INPUT}/radar_localization_config.yaml
-ros2 run vtr_testing_radar vtr_testing_radar_boreas_localization \
+ros2 run vtr_testing_radar vtr_testing_radar_canoe_localization \
   --ros-args -p use_sim_time:=true \
   -r __ns:=/vtr \
   --params-file ${PARAM_FILE} \

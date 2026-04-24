@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
   Eigen::setNbThreads(1);
 
   rclcpp::init(argc, argv);
-  const std::string node_name = "boreas_localization_" + random_string(10);
+  const std::string node_name = "canoe_localization_" + random_string(10);
   auto node = rclcpp::Node::make_shared(node_name);
 
   // odometry sequence directory
@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
       stem + "_radar_localization", 1);
 
   // Load IMU data
-  const auto use_imu = node->declare_parameter<bool>("boreas.imu.use_imu", false);
+  const auto use_imu = node->declare_parameter<bool>("canoe.imu.use_imu", false);
   CLOG(WARNING, "canoe_wrapper") << "IMU enabled: " << use_imu;
   std::vector<IMUMeasurement> all_imu_meas;
   EdgeTransform T_robot_imu; 
@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
   std::stringstream ss;
   
   // Load parameter about whether to run localization in reverse
-  const auto reverse = node->declare_parameter<bool>("boreas.localization.reverse", false);
+  const auto reverse = node->declare_parameter<bool>("canoe.localization.reverse", false);
   for (auto it = privileged_path->begin(0ul); it != privileged_path->end();
        ++it) {
     ss << it->v()->id() << " ";
@@ -170,7 +170,7 @@ int main(int argc, char **argv) {
 
   // List of radar data
   std::vector<fs::directory_entry> files;
-  const auto radar_dir_name = node->declare_parameter<std::string>("boreas.radar_dir_name", "radar");
+  const auto radar_dir_name = node->declare_parameter<std::string>("canoe.radar_dir_name", "radar");
   for (const auto &dir_entry : fs::directory_iterator{loc_dir / radar_dir_name})
     if (dir_entry.path().extension() == ".png") files.push_back(dir_entry);
   std::sort(files.begin(), files.end());
@@ -179,7 +179,7 @@ int main(int argc, char **argv) {
   const auto end_frame = node->declare_parameter<int>("odometry.end_frame", -1);
 
   // Load in groundtruth data
-  const auto load_gt = node->declare_parameter<bool>("boreas.load_gt", true);
+  const auto load_gt = node->declare_parameter<bool>("canoe.load_gt", true);
   CLOG(WARNING, "canoe_wrapper") << "Load groundtruth: " << load_gt;
   std::vector<lgmath::se3::Transformation> T_rad_world_gt;
   std::vector<Eigen::Vector<double, 6>> v_rad_gt;

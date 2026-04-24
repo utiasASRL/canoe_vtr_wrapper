@@ -10,7 +10,7 @@ from rosidl_runtime_py.utilities import get_message
 from rclpy.serialization import deserialize_message
 
 from pylgmath import se3op, so3op
-from pyboreas import BoreasDataset
+from pycanoe import CanoeDataset
 
 
 
@@ -61,10 +61,10 @@ def main(dataset_dir, result_dir, velocity, quiet=False):
   try:
     # Removes parameter related components from the odometry input
     # Ex: 
-    # boreas-2021-10-15-12-35_kstrongest_3_0f35 -> boreas-2021-10-15-12-35
-    # boreas-2021-10-15-12-35                   -> boreas-2021-10-15-12-35
+    # canoe-2025-08-20-16-07_kstrongest_3_0f35 -> canoe-2025-08-20-16-07
+    # canoe-2025-08-20-16-07                   -> canoe-2025-08-20-16-07
     odo_input_parsed = odo_input.split('_', 1)[0]
-    dataset_odo = BoreasDataset(osp.normpath(dataset_dir), [[odo_input_parsed]])
+    dataset_odo = CanoeDataset(osp.normpath(dataset_dir), [[odo_input_parsed]])
   except:
     return
 
@@ -183,7 +183,7 @@ if __name__ == "__main__":
   # Assuming following path structure:
   # <rosbag name>/metadata.yaml
   # <rosbag name>/<rosbag name>_0.db3
-  parser.add_argument('--dataset', default=os.getcwd(), type=str, help='path to boreas dataset (contains boreas-*)')
+  parser.add_argument('--dataset', default=os.getcwd(), type=str, help='path to canoe dataset (contains canoe-*)')
   parser.add_argument('--path', default=os.getcwd(), type=str, help='path to vtr folder (default: os.getcwd())')
   parser.add_argument('--velocity', default=False, action='store_true', help='evaluate velocity (default: False)')
   parser.add_argument('--quiet', action='store_true', help='suppress verbose output (default: False)')

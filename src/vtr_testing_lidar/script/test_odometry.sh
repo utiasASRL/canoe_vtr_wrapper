@@ -1,13 +1,13 @@
 ## this script assumes the following environment variables are set:
 ##   VTRRROOT VTRRDATA VTRRRESULT
-## example usage: test_odometry.sh boreas-2021-09-02-11-42
+## example usage: test_odometry.sh canoe-2025-08-20-16-07
 
 # Get arguments
 ODO_INPUT=$1
 if [ $# -eq 2 ]; then
   PARAM_FILE=$2
 else
-  PARAM_FILE=${VTRRROOT}/src/vtr_testing_lidar/config/boreas.yaml
+  PARAM_FILE=${VTRRROOT}/runtime/config/lidar_config.yaml
 fi
 
 # Log
@@ -33,7 +33,7 @@ fi
 mkdir -p ${VTRRRESULT}/${ODO_INPUT}/${ODO_INPUT}
 cp ${PARAM_FILE} ${VTRRRESULT}/${ODO_INPUT}/${ODO_INPUT}/lidar_odometry_config.yaml
 
-ros2 run vtr_testing_lidar vtr_testing_lidar_boreas_odometry \
+ros2 run vtr_testing_lidar vtr_testing_lidar_canoe_odometry \
   --ros-args -p use_sim_time:=true \
   -r __ns:=/vtr \
   --params-file ${PARAM_FILE} \

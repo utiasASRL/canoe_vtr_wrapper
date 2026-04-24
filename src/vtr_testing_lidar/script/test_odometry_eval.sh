@@ -1,6 +1,6 @@
 ## this script assumes the following environment variables are set:
 ##   VTRRROOT VTRRDATA VTRRRESULT
-## example usage: test_odometry.sh boreas-2021-09-02-11-42
+## example usage: test_odometry.sh canoe-2025-08-20-16-07
 
 # Get arguments
 ODO_INPUT=$1
@@ -12,7 +12,7 @@ echo "Evaluating odometry of sequence ${ODO_INPUT}, storing result to ${VTRRRESU
 source ${VTRRROOT}/src/install/setup.bash
 source ${VTRROOT}/venv/bin/activate
 
-#   - dump odometry result to boreas expected format (txt file)
-python ${VTRRROOT}/src/vtr_testing_lidar/script/boreas_generate_odometry_result.py --dataset ${VTRRDATA} --path ${VTRRRESULT}/${ODO_INPUT} --velocity
+#   - dump odometry result to canoe expected format (txt file)
+python ${VTRRROOT}/src/vtr_testing_lidar/script/canoe_generate_odometry_result.py --dataset ${VTRRDATA} --path ${VTRRRESULT}/${ODO_INPUT} --velocity
 #   - evaluate the result using the evaluation script
-python -m pyboreas.eval.odometry --gt ${VTRRDATA} --pred ${VTRRRESULT}/${ODO_INPUT}/odometry_result --velocity ${VTRRRESULT}/${ODO_INPUT}/odometry_vel_result
+python -m pycanoe.eval.odometry --gt ${VTRRDATA} --pred ${VTRRRESULT}/${ODO_INPUT}/odometry_result --velocity ${VTRRRESULT}/${ODO_INPUT}/odometry_vel_result

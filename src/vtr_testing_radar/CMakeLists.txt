@@ -17,20 +17,16 @@ find_package(vtr_radar REQUIRED)
 find_package(vtr_torch REQUIRED)
 
 ## Executables
-add_executable(${PROJECT_NAME}_boreas_preprocessing src/boreas_preprocessing.cpp)
-ament_target_dependencies(${PROJECT_NAME}_boreas_preprocessing rclcpp std_msgs vtr_testing_common vtr_radar vtr_torch)
+add_executable(${PROJECT_NAME}_canoe_odometry src/canoe_radar_odometry.cpp)
+ament_target_dependencies(${PROJECT_NAME}_canoe_odometry rclcpp std_msgs vtr_testing_common vtr_radar vtr_torch lgmath)
 
-add_executable(${PROJECT_NAME}_boreas_odometry src/boreas_odometry.cpp)
-ament_target_dependencies(${PROJECT_NAME}_boreas_odometry rclcpp std_msgs vtr_testing_common vtr_radar vtr_torch lgmath)
-
-add_executable(${PROJECT_NAME}_boreas_localization src/boreas_localization.cpp)
-ament_target_dependencies(${PROJECT_NAME}_boreas_localization rclcpp std_msgs vtr_testing_common vtr_radar vtr_torch)
+add_executable(${PROJECT_NAME}_canoe_localization src/canoe_radar_localization.cpp)
+ament_target_dependencies(${PROJECT_NAME}_canoe_localization rclcpp std_msgs vtr_testing_common vtr_radar vtr_torch)
 
 install(
   TARGETS
-    ${PROJECT_NAME}_boreas_preprocessing
-    ${PROJECT_NAME}_boreas_odometry
-    ${PROJECT_NAME}_boreas_localization
+    ${PROJECT_NAME}_canoe_odometry
+    ${PROJECT_NAME}_canoe_localization
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION lib/${PROJECT_NAME}

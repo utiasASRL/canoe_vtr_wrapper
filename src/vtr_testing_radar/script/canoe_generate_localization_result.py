@@ -9,7 +9,7 @@ import sqlite3
 from rosidl_runtime_py.utilities import get_message
 from rclpy.serialization import deserialize_message
 
-from pyboreas import BoreasDataset
+from pycanoe import CanoeDataset
 from pylgmath import se3op
 
 
@@ -54,7 +54,7 @@ class BagFileParser():
 def main(dataset_dir, result_dir, quiet=False):
   result_dir = osp.normpath(result_dir)
   odo_input = osp.basename(result_dir)
-  loc_inputs = [i for i in os.listdir(result_dir) if (i != odo_input and i.startswith("boreas"))]
+  loc_inputs = [i for i in os.listdir(result_dir) if (i != odo_input and i.startswith("canoe"))]
   loc_inputs.sort()
   if not quiet:
     print("Result Directory:", result_dir)
@@ -63,7 +63,7 @@ def main(dataset_dir, result_dir, quiet=False):
     print("Dataset Directory:", dataset_dir)
 
   # dataset directory and necessary sequences to load
-  dataset_odo = BoreasDataset(osp.normpath(dataset_dir), [[odo_input]])
+  dataset_odo = CanoeDataset(osp.normpath(dataset_dir), [[odo_input]])
 
   # generate ground truth pose dictionary
   ground_truth_poses_odo = dict()
@@ -107,7 +107,7 @@ def main(dataset_dir, result_dir, quiet=False):
   for i, loc_input in enumerate(loc_inputs):
 
     # dataset directory and necessary sequences to load
-    dataset_loc = BoreasDataset(osp.normpath(dataset_dir), [[loc_input]])
+    dataset_loc = CanoeDataset(osp.normpath(dataset_dir), [[loc_input]])
 
     # generate ground truth pose dictionary
     ground_truth_poses_loc = dict()
@@ -210,7 +210,7 @@ if __name__ == "__main__":
   # Assuming following path structure:
   # <rosbag name>/metadata.yaml
   # <rosbag name>/<rosbag name>_0.db3
-  parser.add_argument('--dataset', default=os.getcwd(), type=str, help='path to boreas dataset (contains boreas-*)')
+  parser.add_argument('--dataset', default=os.getcwd(), type=str, help='path to canoe dataset (contains canoe-*)')
   parser.add_argument('--path', default=os.getcwd(), type=str, help='path to vtr folder (default: os.getcwd())')
   parser.add_argument('--quiet', action='store_true', help='suppress verbose output (default: False)')
 

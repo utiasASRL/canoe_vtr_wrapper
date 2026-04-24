@@ -11,6 +11,7 @@
 #include "vtr_tactic/pipelines/factory.hpp"
 #include "vtr_tactic/rviz_tactic_callback.hpp"
 #include "vtr_tactic/tactic.hpp"
+#include <lgmath/se3/Transformation.hpp>
 
 #include "vtr_testing_common/vtr_testing_common.hpp"
 #include "vtr_testing_common/radar_utils.hpp"
@@ -28,7 +29,7 @@ int main(int argc, char **argv) {
   Eigen::setNbThreads(1);
 
   rclcpp::init(argc, argv);
-  const std::string node_name = "boreas_preprocessing_" + random_string(10);
+  const std::string node_name = "canoe_odometry_" + random_string(10);
   auto node = rclcpp::Node::make_shared(node_name);
 
   // odometry sequence directory
@@ -54,17 +55,30 @@ int main(int argc, char **argv) {
   }
   configureLogging(log_filename, log_debug, log_enabled);
 
-  CLOG(WARNING, "test") << "Odometry Directory: " << odo_dir.string();
-  CLOG(WARNING, "test") << "Output Directory: " << data_dir.string();
+  CLOG(WARNING, "canoe_wrapper") << "Odometry Directory: " << odo_dir.string();
+  CLOG(WARNING, "canoe_wrapper") << "Output Directory: " << data_dir.string();
 
   std::vector<std::string> parts;
   boost::split(parts, odo_dir_str, boost::is_any_of("/"));
   auto stem = parts.back();
   boost::replace_all(stem, "-", "_");
-  CLOG(WARNING, "test") << "Publishing status to topic: "
-                        << (stem + "_radar_preprocessing");
+  CLOG(WARNING, "canoe_wrapper") << "Publishing status to topic: "
+                                  << (stem + "_radar_odometry");
   const auto status_publisher = node->create_publisher<std_msgs::msg::String>(
-      stem + "_radar_preprocessing", 1);
+      stem + "_radar_odometry", 1);
+
+  // Load IMU data
+  const auto use_imu = node->declare_parameter<bool>("canoe.imu.use_imu", false);
+  CLOG(WARNING, "canoe_wrapper") << "IMU enabled: " << use_imu;
+  std::vector<IMUMeasurement> all_imu_meas;
+  EdgeTransform T_robot_imu; 
+  if (use_imu) {
+    const auto imu_path = odo_dir / "imu" / "imu.csv";
+    load_all_imu_meas(imu_path, all_imu_meas);
+    T_robot_imu = load_T_robot_imu(odo_dir);
+    CLOG(WARNING, "canoe_wrapper") << "Loaded " << all_imu_meas.size() << " IMU measurements";
+    CLOG(WARNING, "canoe_wrapper") << "Transform T_robot_imu has been set to:\n" << T_robot_imu;
+  }
 
   // Pose graph
   auto graph = tactic::Graph::MakeShared((data_dir / "graph").string(), false);
@@ -83,7 +97,8 @@ int main(int argc, char **argv) {
   auto tactic =
       std::make_shared<Tactic>(Tactic::Config::fromROS(node), pipeline,
                                pipeline_output, graph, callback);
-  tactic->setPipeline(PipelineMode::Idle);
+  tactic->setPipeline(PipelineMode::TeachBranch);
+  tactic->addRun();
 
   // Frame and transforms
   std::string robot_frame = "robot";
@@ -91,8 +106,8 @@ int main(int argc, char **argv) {
 
   const auto T_robot_radar = load_T_robot_radar(odo_dir);
   const auto T_radar_robot = T_robot_radar.inverse();
-  CLOG(WARNING, "test") << "Transform from " << robot_frame << " to "
-                        << radar_frame << " has been set to" << T_radar_robot;
+  CLOG(WARNING, "canoe_wrapper") << "Transform from " << robot_frame << " to "
+                                  << radar_frame << " has been set to" << T_radar_robot;
 
   auto tf_sbc = std::make_shared<tf2_ros::StaticTransformBroadcaster>(node);
   auto msg =
@@ -106,16 +121,33 @@ int main(int argc, char **argv) {
 
   // List of radar data
   std::vector<fs::directory_entry> files;
-  for (const auto &dir_entry : fs::directory_iterator{odo_dir / "radar"})
+  const auto radar_dir_name = node->declare_parameter<std::string>("canoe.radar_dir_name", "radar");
+  for (const auto &dir_entry : fs::directory_iterator{odo_dir / radar_dir_name})
     if (dir_entry.path().extension() == ".png") files.push_back(dir_entry);
   std::sort(files.begin(), files.end());
-  CLOG(WARNING, "test") << "Found " << files.size() << " radar data";
+  CLOG(WARNING, "canoe_wrapper") << "Found " << files.size() << " radar data";
+  const auto start_frame = node->declare_parameter<int>("canoe.odometry.start_frame", 0);
+  const auto end_frame = node->declare_parameter<int>("canoe.odometry.end_frame", -1);
+
+  // Load in groundtruth data
+  const auto load_gt = node->declare_parameter<bool>("canoe.load_gt", true);
+  CLOG(WARNING, "canoe_wrapper") << "Load groundtruth: " << load_gt;
+  std::vector<lgmath::se3::Transformation> T_rad_world_gt;
+  std::vector<Eigen::Vector<double, 6>> v_rad_gt;
+  // Reserve space
+  T_rad_world_gt.reserve(files.size());
+  v_rad_gt.reserve(files.size());
+  if (load_gt) {
+    load_radar_groundtruth(odo_dir, T_rad_world_gt, v_rad_gt);
+    CLOG(WARNING, "canoe_wrapper") << "Loaded groundtruth for " << T_rad_world_gt.size() << " frames";
+  }
 
   // thread handling variables
   TestControl test_control(node);
 
   // main loop
   int frame = 0;
+  int imu_counter = 0;
   auto it = files.begin();
   while (it != files.end()) {
     if (!rclcpp::ok()) break;
@@ -125,17 +157,53 @@ int main(int argc, char **argv) {
     std::this_thread::sleep_for(
         std::chrono::milliseconds(test_control.delay()));
 
+    if (frame < start_frame) {
+      ++it;
+      ++frame;
+      continue;
+    } else if (end_frame > 0 && frame > end_frame) {
+      break;
+    }
+
     ///
     const auto timestamp = getStampFromPath(it->path().string());
     const auto scan = cv::imread(it->path().string(), cv::IMREAD_GRAYSCALE);
 
-    CLOG(WARNING, "test") << "Loading radar frame " << frame
-                          << " with timestamp " << timestamp;
+    CLOG(WARNING, "canoe_wrapper") << "\033[95mLoading radar frame " << frame
+                                    << " with timestamp " << timestamp << "\033[0m";
 
     // publish clock for sim time
     auto time_msg = rosgraph_msgs::msg::Clock();
     time_msg.clock = rclcpp::Time(timestamp);
     clock_publisher->publish(time_msg);
+    
+    // Feed in IMU data if available/desired
+    std::vector<sensor_msgs::msg::Imu> gyro_msgs;
+    if (use_imu) {
+      int64_t start_timestamp;
+      int64_t end_timestamp;
+      load_radar_time_span(scan, start_timestamp, end_timestamp);
+
+      if (imu_counter == 0) {
+        // Find IMU measurement right before radar frame to initialize
+        while (all_imu_meas[imu_counter].timestamp_ns < start_timestamp) {
+          ++imu_counter;
+        }
+      }
+
+      // Loop through all IMU measurements from previous one to end of current radar frame
+      // This captures IMU measurements that are between frames
+      Eigen::Matrix<double, 4, 1> imu_meas;
+      while (imu_counter < all_imu_meas.size() && all_imu_meas[imu_counter].timestamp_ns < end_timestamp) {
+        auto gyro_msg = sensor_msgs::msg::Imu();
+        gyro_msg.angular_velocity.x = all_imu_meas[imu_counter].angvel_x;
+        gyro_msg.angular_velocity.y = all_imu_meas[imu_counter].angvel_y;
+        gyro_msg.angular_velocity.z = all_imu_meas[imu_counter].angvel_z;
+        gyro_msg.header.stamp = rclcpp::Time(all_imu_meas[imu_counter].timestamp_ns);
+        gyro_msgs.push_back(gyro_msg);
+        ++imu_counter;
+      }
+    }
 
     // Convert message to query_data format and store into query_data
     auto query_data = std::make_shared<radar::RadarQueryCache>();
@@ -143,19 +211,34 @@ int main(int argc, char **argv) {
     // some modules require node for visualization
     query_data->node = node;
 
-    // set timestamp
-    query_data->stamp.emplace(timestamp);
-
     // make up some environment info (not important)
     tactic::EnvInfo env_info;
     env_info.terrain_type = 0;
     query_data->env_info.emplace(env_info);
 
+    // fill in the vehicle to sensor transform and frame name
+    query_data->T_s_r.emplace(T_radar_robot);
+
+    // set timestamp
+    query_data->stamp.emplace(timestamp);
+
     // set radar frame
     query_data->scan.emplace(scan);
 
-    // fill in the vehicle to sensor transform and frame name
-    query_data->T_s_r.emplace(T_radar_robot);
+    // set gyro messages
+    if (gyro_msgs.size() > 0) {
+      query_data->T_s_r_gyro.emplace(T_robot_imu.inverse());
+      query_data->gyro_msgs.emplace(gyro_msgs);
+    }
+
+    // Set groundtruth if loaded
+    if (load_gt && frame < T_rad_world_gt.size()) {
+      query_data->T_s_world_gt.emplace(T_rad_world_gt[frame]);
+      query_data->v_s_gt.emplace(v_rad_gt[frame]);
+    }
+
+    // Add sequence name to query data
+    query_data->seq_name = stem;
 
     // execute the pipeline
     tactic->input(query_data);
@@ -176,8 +259,8 @@ int main(int argc, char **argv) {
   callback.reset();
   pipeline.reset();
   pipeline_factory.reset();
-  CLOG(WARNING, "test") << "Saving pose graph and reset.";
+  CLOG(WARNING, "canoe_wrapper") << "Saving pose graph and reset.";
   graph->save();
   graph.reset();
-  CLOG(WARNING, "test") << "Saving pose graph and reset. - DONE!";
+  CLOG(WARNING, "canoe_wrapper") << "Saving pose graph and reset. - DONE!";
 }

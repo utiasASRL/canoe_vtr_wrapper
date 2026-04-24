@@ -74,7 +74,7 @@ RUN apt update && apt install -q -y \
   htop \
   wget
 
-# Install aws dependencies for boreas dataset installation
+# Install aws dependencies for dataset installation
 RUN apt update && apt upgrade -q -y zip unzip
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
   unzip awscliv2.zip && \

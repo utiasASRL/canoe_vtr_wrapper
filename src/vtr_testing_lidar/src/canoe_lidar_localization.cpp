@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
   Eigen::setNbThreads(1);
 
   rclcpp::init(argc, argv);
-  const std::string node_name = "boreas_localization_" + random_string(10);
+  const std::string node_name = "canoe_localization_" + random_string(10);
   auto node = rclcpp::Node::make_shared(node_name);
 
   // odometry sequence directory
@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
     "lidar_frame_marker", 1);
 
   // Load IMU data
-  const auto use_imu = node->declare_parameter<bool>("boreas.imu.use_imu", false);
+  const auto use_imu = node->declare_parameter<bool>("canoe.imu.use_imu", false);
   CLOG(WARNING, "canoe_wrapper") << "IMU enabled: " << use_imu;
   std::vector<IMUMeasurement> all_imu_meas;
   EdgeTransform T_robot_imu; 
@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
   std::stringstream ss;
 
   // Load parameter about whether to run localization in reverse
-  const auto reverse = node->declare_parameter<bool>("boreas.localization.reverse", false);
+  const auto reverse = node->declare_parameter<bool>("canoe.localization.reverse", false);
   for (auto it = privileged_path->begin(0ul); it != privileged_path->end();
        ++it) {
     ss << it->v()->id() << " ";
@@ -184,11 +184,11 @@ int main(int argc, char **argv) {
     if (dir_entry.path().extension() == ".bin") files.push_back(dir_entry);
   std::sort(files.begin(), files.end());
   CLOG(WARNING, "canoe_wrapper") << "Found " << files.size() << " lidar data";
-  const auto start_frame = node->declare_parameter<int>("boreas.odometry.start_frame", 0);
-  const auto end_frame = node->declare_parameter<int>("boreas.odometry.end_frame", -1);
+  const auto start_frame = node->declare_parameter<int>("canoe.odometry.start_frame", 0);
+  const auto end_frame = node->declare_parameter<int>("canoe.odometry.end_frame", -1);
 
   // Load in groundtruth data
-  const auto load_gt = node->declare_parameter<bool>("boreas.load_gt", true);
+  const auto load_gt = node->declare_parameter<bool>("canoe.load_gt", true);
   CLOG(WARNING, "canoe_wrapper") << "Load groundtruth: " << load_gt;
   std::vector<lgmath::se3::Transformation> T_lid_world_gt;
   std::vector<Eigen::Vector<double, 6>> v_lid_gt;
