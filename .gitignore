@@ -23,7 +23,6 @@ log/
 # Heavy IO
 data/
 results/
-
 #
 .vscode/
 
@@ -64,3 +63,6 @@ results/
 *.exe
 *.out
 *.app
+
+# Setup script
+scripts/setup_container.sh

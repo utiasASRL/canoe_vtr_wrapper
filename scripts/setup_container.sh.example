@@ -1,3 +1,8 @@
+#!/bin/bash
+
+# Copy this file to scripts/setup_container.sh and edit the user-specific paths.
+# use: cp scripts/setup_container.sh.example scripts/setup_container.sh
+
 # Set up VTR directory pointers
 export VTRROOT=$ROOTDIR                     # This is required for some internal scripts
 export VTRRROOT=$ROOTDIR
