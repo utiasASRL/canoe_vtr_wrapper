@@ -107,7 +107,7 @@ struct IMUMeasurement {
 inline void load_all_imu_meas(const fs::path &imu_meas_file, std::vector<IMUMeasurement> &all_imu_meas) {
   // Confirm file exists
   if (!fs::exists(imu_meas_file)) {
-    CLOG(ERROR, "boreas_wrapper") << "IMU measurement file does not exist: " << imu_meas_file;
+    CLOG(ERROR, "canoe_wrapper") << "IMU measurement file does not exist: " << imu_meas_file;
     throw std::invalid_argument("File not found: " + imu_meas_file.string());
   }
   

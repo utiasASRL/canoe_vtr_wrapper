@@ -19,11 +19,11 @@ inline EdgeTransform load_T_robot_radar(const fs::path &path) {
     std::ifstream ifs2(path / "calib" / "T_lidar_radar.txt", std::ios::in);
 
     if (!ifs1.is_open()) {
-        CLOG(ERROR, "boreas_wrapper") << "Could not open file: " << path / "calib" / "T_boat_lidar.txt";
+        CLOG(ERROR, "canoe_wrapper") << "Could not open file: " << path / "calib" / "T_boat_lidar.txt";
         throw std::invalid_argument("File not found: " + (path / "calib" / "T_boat_lidar.txt").string());
     }
     if (!ifs2.is_open()) {
-        CLOG(ERROR, "boreas_wrapper") << "Could not open file: " << path / "calib" / "T_lidar_radar.txt";
+        CLOG(ERROR, "canoe_wrapper") << "Could not open file: " << path / "calib" / "T_lidar_radar.txt";
         throw std::invalid_argument("File not found: " + (path / "calib" / "T_lidar_radar.txt").string());
     }
 
@@ -35,7 +35,7 @@ inline EdgeTransform load_T_robot_radar(const fs::path &path) {
     for (size_t row = 0; row < 4; row++)
         for (size_t col = 0; col < 4; col++) ifs2 >> T_lidar_radar_mat(row, col);
 
-    // Extrinsic from radar to rear wheel
+    // Extrinsic from radar to boat
     EdgeTransform T_robot_radar(
         Eigen::Matrix4d(T_boat_lidar_mat * T_lidar_radar_mat),
         Eigen::Matrix<double, 6, 6>::Zero()
@@ -47,14 +47,14 @@ inline EdgeTransform load_T_robot_radar(const fs::path &path) {
 inline EdgeTransform load_T_robot_lidar(const fs::path &path) {
     std::ifstream ifs(path / "calib" / "T_boat_lidar.txt", std::ios::in);
     if (!ifs.is_open()) {
-        CLOG(ERROR, "boreas_wrapper") << "Could not open file: " << path / "calib" / "T_boat_lidar.txt";
+        CLOG(ERROR, "canoe_wrapper") << "Could not open file: " << path / "calib" / "T_boat_lidar.txt";
         throw std::invalid_argument("File not found: " + (path / "calib" / "T_boat_lidar.txt").string());
     }
     Eigen::Matrix4d T_boat_lidar_mat;
     for (size_t row = 0; row < 4; row++)
         for (size_t col = 0; col < 4; col++) ifs >> T_boat_lidar_mat(row, col);
 
-    // Extrinsic from lidar to rear wheel
+    // Extrinsic from lidar to boat
     EdgeTransform T_robot_lidar(
         Eigen::Matrix4d(T_boat_lidar_mat),
         Eigen::Matrix<double, 6, 6>::Zero()
@@ -68,11 +68,11 @@ inline EdgeTransform load_T_robot_imu(const fs::path &path) {
     std::ifstream ifs2(path / "calib" / "T_lidar_imu.txt", std::ios::in);
 
     if (!ifs1.is_open()) {
-        CLOG(ERROR, "boreas_wrapper") << "Could not open file: " << path / "calib" / "T_boat_lidar.txt";
+        CLOG(ERROR, "canoe_wrapper") << "Could not open file: " << path / "calib" / "T_boat_lidar.txt";
         throw std::invalid_argument("File not found: " + (path / "calib" / "T_boat_lidar.txt").string());
     }
     if (!ifs2.is_open()) {
-        CLOG(ERROR, "boreas_wrapper") << "Could not open file: " << path / "calib" / "T_lidar_imu.txt";
+        CLOG(ERROR, "canoe_wrapper") << "Could not open file: " << path / "calib" / "T_lidar_imu.txt";
         throw std::invalid_argument("File not found: " + (path / "calib" / "T_lidar_imu.txt").string());
     }
 
@@ -84,7 +84,7 @@ inline EdgeTransform load_T_robot_imu(const fs::path &path) {
     for (size_t row = 0; row < 4; row++)
         for (size_t col = 0; col < 4; col++) ifs2 >> T_lidar_imu_mat(row, col);
 
-    // Extrinsic from imu to rear wheel
+    // Extrinsic from imu to boat
     EdgeTransform T_robot_imu(
         Eigen::Matrix4d(T_boat_lidar_mat * T_lidar_imu_mat),
         Eigen::Matrix<double, 6, 6>::Zero()
@@ -98,7 +98,7 @@ inline EdgeTransform load_T_enu_init(const fs::path &path, const bool &reverse, 
     std::ifstream ifs(path / "novatel" / (sensor + "_poses.csv"), std::ios::in);
 
     if (!ifs.is_open()) {
-        CLOG(ERROR, "boreas_wrapper") << "Could not open file: " << path / "novatel" / (sensor + "_poses.csv");
+        CLOG(ERROR, "canoe_wrapper") << "Could not open file: " << path / "novatel" / (sensor + "_poses.csv");
         throw std::invalid_argument("File not found: " + (path / "novatel" / (sensor + "_poses.csv")).string());
     }
 
