@@ -68,41 +68,19 @@ int main(int argc, char **argv) {
 
   // Load IMU data
   const auto use_imu = node->declare_parameter<bool>("boreas.imu.use_imu", false);
-  const auto imu_name = node->declare_parameter<std::string>("boreas.imu.imu_name", "dmu");
   CLOG(WARNING, "boreas_wrapper") << "IMU enabled: " << use_imu;
   std::vector<IMUMeasurement> all_imu_meas;
-  EdgeTransform T_imu_robot; 
+  EdgeTransform T_robot_imu; 
   if (use_imu) {
-    // Check that imu name is one of "dmu", "aeva", "imu"
-    CLOG(WARNING, "boreas_wrapper") << "IMU name: " << imu_name;
-    if (imu_name != "dmu" && imu_name != "aeva" && imu_name != "imu") {
-      CLOG(ERROR, "boreas_wrapper") << "Unknown IMU name: " << imu_name;
-      return 1;
-    }
-    const auto imu_file_name = (imu_name == "imu") ? "imu_raw.csv" : (imu_name + "_imu.csv");
-    const auto imu_path = odo_dir / "imu" / imu_file_name;
+    const auto imu_path = odo_dir / "imu" / "imu.csv";
     if (!fs::exists(imu_path)) {
       CLOG(ERROR, "boreas_wrapper") << "IMU file does not exist: " << imu_path.string();
       return 1;
     }
-    load_all_imu_meas(imu_path, all_imu_meas, imu_file_name);
-    T_imu_robot = load_T_imu_robot(odo_dir, imu_name);
+    load_all_imu_meas(imu_path, all_imu_meas);
+    T_robot_imu = load_T_robot_imu(odo_dir);
     CLOG(WARNING, "boreas_wrapper") << "Loaded " << all_imu_meas.size() << " IMU measurements";
-    CLOG(WARNING, "boreas_wrapper") << "Transform from IMU to robot has been set to:\n" << T_imu_robot;
-  }
-
-  // Load wheel encoder data
-  const auto use_wheel_encoder = node->declare_parameter<bool>("boreas.wheel_encoder.use_wheel_encoder", false);
-  const auto encoder_max = node->declare_parameter<int>("boreas.wheel_encoder.encoder_max", 16777216);
-  CLOG(WARNING, "boreas_wrapper") << "Wheel encoder enabled: " << use_wheel_encoder;
-  std::vector<std::pair<int64_t, int64_t>> all_wheel_meas;
-  EdgeTransform T_wheel_robot; 
-  if (use_wheel_encoder) {
-    load_wheel_encoder_data(odo_dir, encoder_max, all_wheel_meas);
-    T_wheel_robot = load_T_wheel_robot(odo_dir);
-
-    CLOG(WARNING, "boreas_wrapper") << "Loaded " << all_wheel_meas.size() << " wheel measurements";
-    CLOG(WARNING, "boreas_wrapper") << "Transform from wheel to robot has been set to:\n" << T_wheel_robot;
+    CLOG(WARNING, "boreas_wrapper") << "Transform T_robot_imu has been set to:\n" << T_robot_imu;
   }
 
   // Pose graph
@@ -162,7 +140,7 @@ int main(int argc, char **argv) {
   T_lid_world_gt.reserve(files.size());
   v_lid_gt.reserve(files.size());
   if (load_gt) {
-    load_lidar_groundtruth(odo_dir, T_lid_world_gt, v_lid_gt, "lidar");
+    load_lidar_groundtruth(odo_dir, T_lid_world_gt, v_lid_gt);
     CLOG(WARNING, "boreas_wrapper") << "Loaded groundtruth for " << T_lid_world_gt.size() << " frames";
   }
 
@@ -172,7 +150,6 @@ int main(int argc, char **argv) {
   // main loop
   int frame = 0;
   int imu_counter = 0;
-  int wheel_counter = 0;
   auto it = files.begin();
   while (it != files.end()) {
     if (!rclcpp::ok()) break;
@@ -228,32 +205,6 @@ int main(int argc, char **argv) {
       CLOG(DEBUG, "boreas_wrapper") << "Loaded " << gyro_msgs.size() << " IMU measurements";
     }
 
-    // Feed in wheel encoder data if available/desired
-    std::vector<std::pair<rclcpp::Time, double>> wheel_meas;
-    if (use_wheel_encoder) {
-      int64_t start_timestamp = points(0, 5) * 1.0e9;
-      int64_t end_timestamp = points(points.rows() - 1, 5) * 1.0e9;
-
-      if (wheel_counter == 0) {
-        // Find wheel measurement right before lidar frame to initialize
-        while (all_wheel_meas[wheel_counter].first < start_timestamp) {
-          ++wheel_counter;
-        }
-      }
-
-      // Loop through all wheel measurements from previous one to end of current lidar frame
-      // This captures wheel measurements that are between frames
-      while (wheel_counter < all_wheel_meas.size() && all_wheel_meas[wheel_counter].first < end_timestamp) {
-        std::pair<rclcpp::Time, double> wheel_msg = {
-          rclcpp::Time(all_wheel_meas[wheel_counter].first),             // timestamp
-          static_cast<double>(all_wheel_meas[wheel_counter].second)      // pulse count
-        };
-        wheel_meas.push_back(wheel_msg);
-        ++wheel_counter;
-      }
-      CLOG(DEBUG, "boreas_wrapper") << "Loaded " << wheel_meas.size() << " wheel measurements";
-    }
-
     // Convert message to query_data format and store into query_data
     auto query_data = std::make_shared<lidar::LidarQueryCache>();
 
@@ -276,14 +227,8 @@ int main(int argc, char **argv) {
 
     // set gyro messages
     if (gyro_msgs.size() > 0) {
-      query_data->T_s_r_gyro.emplace(T_imu_robot);
+      query_data->T_s_r_gyro.emplace(T_robot_imu.inverse());
       query_data->gyro_msgs.emplace(gyro_msgs);
-    }
-
-    // set wheel encoder messages
-    if (wheel_meas.size() > 0) {
-      query_data->T_s_r_wheel.emplace(T_wheel_robot);
-      query_data->wheel_meas.emplace(wheel_meas);
     }
 
     // Set groundtruth if loaded
