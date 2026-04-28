@@ -28,7 +28,7 @@
 
     ############ CANOE data configuration ############
     canoe:
-      load_gt: false
+      load_gt: true
       imu:
         use_imu: true
       odometry:
@@ -73,9 +73,9 @@
 
       odometry: [
           # odometry and mapping thread modules
-          "icp",
-          # "gt",
-          # "wheel",
+          #icp",
+          "gt",
+          #"wheel",
           "mapping",
           "vertex_test",
           "memory",
@@ -94,12 +94,7 @@
 
     preprocessing:
       conversion:
-        type: lidar.velodyne_converter
-
-        use_fov_limit: false
-        fov_center: 45.0
-        fov: 60.0
-
+        type: lidar.ouster_canoe_converter
         visualize: false
 
       filtering:
