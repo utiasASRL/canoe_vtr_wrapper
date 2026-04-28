@@ -69,8 +69,7 @@ def main(dataset_dir, result_dir, velocity):
 
   data_dir = osp.join(odo_dir, "graph/data")
   if not osp.exists(data_dir):
-    print("Data directory does not exist:", data_dir)
-    return
+    raise FileNotFoundError("Data directory does not exist: {}".format(data_dir))
   print("Looking at result data directory:", data_dir)
   
   # get bag file

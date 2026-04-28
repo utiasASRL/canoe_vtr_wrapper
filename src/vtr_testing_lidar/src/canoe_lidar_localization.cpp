@@ -236,8 +236,8 @@ int main(int argc, char **argv) {
     // Feed in IMU data if available/desired
     std::vector<sensor_msgs::msg::Imu> gyro_msgs;
     if (use_imu) {
-      int64_t start_timestamp = points(0, 5) * 1.0e9;
-      int64_t end_timestamp = points(points.rows() - 1, 5) * 1.0e9;
+      int64_t start_timestamp = points(0, 4) * 1.0e9;
+      int64_t end_timestamp = points(points.rows() - 1, 4) * 1.0e9;
 
       if (imu_counter == 0) {
         // Find IMU measurement right before lidar frame to initialize

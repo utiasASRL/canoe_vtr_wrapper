@@ -5,6 +5,9 @@
 #include <filesystem>
 #include <fstream>
 #include <sstream>
+#include <stdexcept>
+#include <cstdint>
+#include <cstring>
 #include <vector>
 
 #include "vtr_testing_common/utils.hpp"
@@ -75,24 +78,56 @@ inline void load_radar_groundtruth(const fs::path &path, std::vector<lgmath::se3
 
 inline std::pair<int64_t, Eigen::MatrixXd> load_lidar(const std::string &path) {
   std::ifstream ifs(path, std::ios::binary);
-  std::vector<char> buffer(std::istreambuf_iterator<char>(ifs), {});
-  uint float_offset = 4;
-  uint fields = 7;  // x, y, z, i, t, r, a
-  uint point_step = float_offset * fields;
-  uint N = floor(buffer.size() / point_step);
-  Eigen::MatrixXd pc(Eigen::MatrixXd::Ones(N, fields));
-  for (uint i = 0; i < N; ++i) {
-    uint bufpos = i * point_step;
-    for (uint j = 0; j < fields; ++j) {
-      pc(i, j) =
-          getFloatFromByteArray(buffer.data(), bufpos + j * float_offset);
-    }
+  if (!ifs) {
+    CLOG(ERROR, "canoe_wrapper") << "Failed to open lidar file: " << path;
+    throw std::runtime_error("Failed to open lidar file: " + path);
   }
-  // Add offset to timestamps
-  const auto timestamp = getStampFromPath(path);
-  double t = double(timestamp / 1000) * 1.0e-6;
-  pc.block(0, 4, N, 1).array() += t;
 
+  std::vector<char> buffer(std::istreambuf_iterator<char>(ifs), {});
+  constexpr size_t fields = 7;  // x, y, z, i, t, r, a
+  constexpr size_t point_step =
+      sizeof(double) * 3 + sizeof(uint16_t) + sizeof(uint64_t) + sizeof(uint16_t) * 2;
+  const size_t N = buffer.size() / point_step;
+
+  if (N == 0) {
+    const auto timestamp = getStampFromPath(path);
+    return std::make_pair(timestamp, Eigen::MatrixXd::Zero(0, fields));
+  }
+
+  Eigen::MatrixXd pc = Eigen::MatrixXd::Zero(static_cast<Eigen::Index>(N), fields);
+  for (size_t i = 0; i < N; ++i) {
+    const size_t bufpos = i * point_step;
+    const char *p = buffer.data() + bufpos;
+
+    double x = 0.0, y = 0.0, z = 0.0;
+    uint16_t intensity = 0, reflectivity = 0, ambient = 0;
+    uint64_t timestamp_us = 0;
+
+    std::memcpy(&x, p, sizeof(double));
+    std::memcpy(&y, p + sizeof(double), sizeof(double));
+    std::memcpy(&z, p + sizeof(double) * 2, sizeof(double));
+    std::memcpy(&intensity, p + sizeof(double) * 3, sizeof(uint16_t));
+    std::memcpy(&timestamp_us,
+                p + sizeof(double) * 3 + sizeof(uint16_t),
+                sizeof(uint64_t));
+    std::memcpy(&reflectivity,
+                p + sizeof(double) * 3 + sizeof(uint16_t) + sizeof(uint64_t),
+                sizeof(uint16_t));
+    std::memcpy(&ambient,
+                p + sizeof(double) * 3 + sizeof(uint16_t) + sizeof(uint64_t) + sizeof(uint16_t),
+                sizeof(uint16_t));
+
+    pc(i, 0) = x;
+    pc(i, 1) = y;
+    pc(i, 2) = z;
+    pc(i, 3) = static_cast<double>(intensity);
+    pc(i, 4) = static_cast<double>(timestamp_us) * 1.0e-6;
+    pc(i, 5) = static_cast<double>(reflectivity);
+    pc(i, 6) = static_cast<double>(ambient);
+  }
+
+  // Frame timestamp still comes from the file name for ROS clocking.
+  const auto timestamp = getStampFromPath(path);
   return std::make_pair(timestamp, std::move(pc));
 }
 

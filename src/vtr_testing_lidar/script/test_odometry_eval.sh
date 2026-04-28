@@ -2,6 +2,8 @@
 ##   VTRRROOT VTRRDATA VTRRRESULT
 ## example usage: test_odometry.sh canoe-2025-08-20-16-07
 
+#set -e
+
 # Get arguments
 ODO_INPUT=$1
 
