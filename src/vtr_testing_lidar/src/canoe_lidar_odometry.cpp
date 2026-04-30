@@ -71,6 +71,7 @@ int main(int argc, char **argv) {
   CLOG(WARNING, "canoe_wrapper") << "IMU enabled: " << use_imu;
   std::vector<IMUMeasurement> all_imu_meas;
   EdgeTransform T_robot_imu; 
+  Eigen::Vector3d gyro_bias = Eigen::Vector3d::Zero();
   if (use_imu) {
     const auto imu_path = odo_dir / "imu" / "imu.csv";
     if (!fs::exists(imu_path)) {
@@ -81,6 +82,13 @@ int main(int argc, char **argv) {
     T_robot_imu = load_T_robot_imu(odo_dir);
     CLOG(WARNING, "canoe_wrapper") << "Loaded " << all_imu_meas.size() << " IMU measurements";
     CLOG(WARNING, "canoe_wrapper") << "Transform T_robot_imu has been set to:\n" << T_robot_imu;
+
+    // Load gyro bias if available
+    const auto gyro_bias_x = node->declare_parameter<double>("canoe.imu.gyro_bias.x", 0.0);
+    const auto gyro_bias_y = node->declare_parameter<double>("canoe.imu.gyro_bias.y", 0.0);
+    const auto gyro_bias_z = node->declare_parameter<double>("canoe.imu.gyro_bias.z", 0.0);
+    gyro_bias << gyro_bias_x, gyro_bias_y, gyro_bias_z;
+    CLOG(WARNING, "canoe_wrapper") << "Gyro bias set to: " << gyro_bias.transpose();
   }
 
   // Pose graph
@@ -195,9 +203,9 @@ int main(int argc, char **argv) {
       Eigen::Matrix<double, 4, 1> imu_meas;
       while (imu_counter < all_imu_meas.size() && all_imu_meas[imu_counter].timestamp_ns < end_timestamp) {
         auto gyro_msg = sensor_msgs::msg::Imu();
-        gyro_msg.angular_velocity.x = all_imu_meas[imu_counter].angvel_x;
-        gyro_msg.angular_velocity.y = all_imu_meas[imu_counter].angvel_y;
-        gyro_msg.angular_velocity.z = all_imu_meas[imu_counter].angvel_z;
+        gyro_msg.angular_velocity.x = all_imu_meas[imu_counter].angvel_x - gyro_bias.x();
+        gyro_msg.angular_velocity.y = all_imu_meas[imu_counter].angvel_y - gyro_bias.y();
+        gyro_msg.angular_velocity.z = all_imu_meas[imu_counter].angvel_z - gyro_bias.z();
         gyro_msg.header.stamp = rclcpp::Time(all_imu_meas[imu_counter].timestamp_ns);
         gyro_msgs.push_back(gyro_msg);
         ++imu_counter;

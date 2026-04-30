@@ -87,7 +87,7 @@ inline std::pair<int64_t, Eigen::MatrixXd> load_lidar(const std::string &path) {
   constexpr size_t fields = 7;  // x, y, z, i, t, r, a
   constexpr size_t point_step =
       sizeof(double) * 3 + sizeof(uint16_t) + sizeof(uint64_t) + sizeof(uint16_t) * 2;
-  const size_t N = buffer.size() / point_step;
+  const size_t N = floor(buffer.size() / point_step);
 
   if (N == 0) {
     const auto timestamp = getStampFromPath(path);
