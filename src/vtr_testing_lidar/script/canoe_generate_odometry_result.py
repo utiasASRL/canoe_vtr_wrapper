@@ -114,10 +114,10 @@ def main(dataset_dir, result_dir, velocity):
       w_v_r_robot[4] = message[1].angular.y
       w_v_r_robot[5] = message[1].angular.z
 
-      w_r_v_applanix = - w_v_r_robot.reshape(6, 1)
+      w_r_v_robot = - w_v_r_robot.reshape(6, 1)
 
       timestamp = int(int(message[0]) / 1000)
-      vel_results.append([timestamp] + w_r_v_applanix.flatten().tolist())
+      vel_results.append([timestamp] + w_r_v_robot.flatten().tolist())
 
     output_dir = osp.join(result_dir, "odometry_vel_result")
     os.makedirs(output_dir, exist_ok=True)

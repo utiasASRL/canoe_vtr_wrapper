@@ -75,36 +75,17 @@ def main(dataset_dir, result_dir, velocity, quiet=False):
     return
   if not quiet: print("Looking at result data directory:", data_dir)
 
-  # Radar results are in radar frame (not applanix like lidar)
-  T_applanix_wheel_file = os.path.join(dataset_dir, odo_input, "calib/T_applanix_wheel.txt")
-  if not os.path.exists(T_applanix_wheel_file):
-    print("File does not exist:", T_applanix_wheel_file, ". Loading default.")
-    T_applanix_wheel = np.array([[0.999560,  0.029665, 0.000000, -0.813993],
-                                [-0.029665, 0.999560, 0.000000, -0.455312],
-                                [0.000000, 0.000000, 1.000000, -1.610000],
-                                [0.000000, 0.000000, 0.000000, 1.000000]])
-  else:
-    T_applanix_wheel = np.loadtxt(T_applanix_wheel_file)
-  T_wheel_applanix = get_inverse_tf(T_applanix_wheel)
-  T_wheelfwd_wheel = np.array([[0, 1, 0, 0],
-                              [-1, 0, 0, 0],
-                              [0, 0, 1, 0],
-                              [0, 0, 0, 1]])
-  T_robot_applanix = T_wheelfwd_wheel @ T_wheel_applanix
 
-  # Load in T_radar_applanix
-  T_radar_lidar_file = os.path.join(dataset_dir, odo_input, "calib/T_radar_lidar.txt")
-  if not os.path.exists(T_radar_lidar_file):
-    raise Exception("File does not exist: " + T_radar_lidar_file)
-  T_radar_lidar = np.loadtxt(T_radar_lidar_file)
-  T_applanix_lidar_file = os.path.join(dataset_dir, odo_input, "calib/T_applanix_lidar.txt")
-  if not os.path.exists(T_applanix_lidar_file):
-    raise Exception("File does not exist: " + T_applanix_lidar_file)
-  T_applanix_lidar = np.loadtxt(T_applanix_lidar_file)
-  T_radar_applanix = T_radar_lidar @ get_inverse_tf(T_applanix_lidar)
-
-  # Compute final transform from radar to robot frame
-  T_robot_radar = T_robot_applanix @ get_inverse_tf(T_radar_applanix)
+  # Load in T_boat_radar
+  T_lidar_radar_file = os.path.join(dataset_dir, odo_input, "calib/T_lidar_radar.txt")
+  if not os.path.exists(T_lidar_radar_file):
+    raise Exception("File does not exist: " + T_lidar_radar_file)
+  T_lidar_radar = np.loadtxt(T_lidar_radar_file)
+  T_boat_lidar_file = os.path.join(dataset_dir, odo_input, "calib/T_boat_lidar.txt")
+  if not os.path.exists(T_boat_lidar_file):
+    raise Exception("File does not exist: " + T_boat_lidar_file)
+  T_boat_lidar = np.loadtxt(T_boat_lidar_file)
+  T_boat_radar = T_boat_lidar @ T_lidar_radar
 
   # get bag file
   bag_file = '{0}/{1}/{1}_0.db3'.format(osp.abspath(data_dir), "odometry_result")
@@ -121,7 +102,7 @@ def main(dataset_dir, result_dir, velocity, quiet=False):
       continue
     T_w_r_vec = np.array(message[1].t_world_robot.xi)[..., None]
     T_w_r = se3op.vec2tran(T_w_r_vec)
-    T_w_a = T_w_r @ T_robot_radar
+    T_w_a = T_w_r @ T_boat_radar
     T_a_w_res = get_inverse_tf(T_w_a).flatten().tolist()[:12]
     result.append([timestamp] + T_a_w_res)
 
@@ -158,7 +139,7 @@ def main(dataset_dir, result_dir, velocity, quiet=False):
       w_v_r_robot[5] = message[1].angular.z
 
       # Transform velocity from robot to radar frame/origin
-      w_s_v_radar = - se3op.tranAd(get_inverse_tf(T_robot_radar)) @ w_v_r_robot.reshape(6, 1)
+      w_s_v_radar = - se3op.tranAd(get_inverse_tf(T_boat_radar)) @ w_v_r_robot.reshape(6, 1)
       vel_results.append([timestamp] + w_s_v_radar.flatten().tolist())
 
     output_dir = osp.join(result_dir, "odometry_vel_result")
