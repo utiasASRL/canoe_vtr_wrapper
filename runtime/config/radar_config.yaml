@@ -32,7 +32,11 @@
       radar_dir_name: "radar"
       load_gt: true
       imu:
-        use_imu: false
+        use_imu: true
+        gyro_bias: 
+          x:  0.0162205
+          y: -0.00611719
+          z:  0.00309049
       odometry:
         start_frame: 0  # start frame for odometry
         end_frame: -1   # -1 means process all frames
