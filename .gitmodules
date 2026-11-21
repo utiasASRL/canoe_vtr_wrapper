@@ -7,4 +7,4 @@
 [submodule "external/pycanoe"]
 	path = external/pycanoe
 	url = https://github.com/utiasASRL/pycanoe.git
-	branch = canoe_eval
+	branch = main
